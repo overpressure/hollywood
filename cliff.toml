@@ -1,0 +1,46 @@
+# The changelog, from the conventional commits, by git-cliff (docs/releasing.md); overpressure's scripts/release.py
+# notes writes a release's notes and CHANGELOG.md with it, starting at the first release:
+#   uvx git-cliff@2.14.2 --unreleased        what the next release brings
+# Features and fixes for users, each commit's subject; everything else in one count.
+
+[changelog]
+header = """
+# Changelog
+
+Generated from the conventional commits by git-cliff ([docs/releasing.md](docs/releasing.md)).
+"""
+body = """
+{% if version -%}
+## {{ version | trim_start_matches(pat="v") }} ({{ timestamp | date(format="%Y-%m-%d") }})
+{%- else -%}
+## Unreleased
+{%- endif %}
+{% for group, commits in commits | group_by(attribute="group") %}
+{%- if group | striptags | trim == "Other" %}
+{{ commits | length }} other commits: documentation, tests, tooling and refactoring.
+{% else %}
+### {{ group | striptags | trim }}
+{% for commit in commits %}
+- {{ commit.message | split(pat="\n") | first | trim }}{% if commit.breaking %} (breaking){% endif %}
+{%- endfor %}
+{% endif %}
+{%- endfor %}
+
+"""
+trim = false
+footer = ""
+
+[git]
+conventional_commits = true
+filter_unconventional = false
+split_commits = false
+protect_breaking_commits = true
+commit_parsers = [
+  { message = "^feat", group = "<!-- 0 -->Features" },
+  { message = "^fix", group = "<!-- 1 -->Fixes" },
+  { message = ".*", group = "<!-- 9 -->Other" },
+]
+filter_commits = false
+# The releases: calendar versions (2026.11.0b0).
+tag_pattern = '^(v[0-9]|20[0-9]{2}\.[0-9])'
+sort_commits = "newest"

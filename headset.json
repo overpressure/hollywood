@@ -1,0 +1,8 @@
+{
+ "codename": "myheadset",
+ "name": "My Headset",
+ "version": "2026.11.0.dev0",
+ "api": "1.5",
+ "commit": "$Format:%H$",
+ "date": "$Format:%ct$"
+}

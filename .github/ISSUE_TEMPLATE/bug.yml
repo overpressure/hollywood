@@ -1,0 +1,50 @@
+name: Bug report
+description: Something on the headset, in the installer or in the tools does not work as documented.
+type: Bug
+body:
+  - type: dropdown
+    id: area
+    attributes:
+      label: Where
+      options:
+        - Installer (window or command line)
+        - Installed system on the headset
+        - Games, Steam or SteamVR
+        - Tracking or controllers
+        - Builds and host tooling
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened, and what did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: Worn or on the table, cable in or out, which game or command.
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: The installer's version, or the commit you built.
+    validations:
+      required: true
+  - type: input
+    id: host
+    attributes:
+      label: Computer
+      placeholder: Windows 11, macOS 15, Ubuntu 24.04, ...
+  - type: textarea
+    id: bundle
+    attributes:
+      label: Logs
+      description: >-
+        Attach the file Save logs… on My Headset's page in the window saves (in a terminal:
+        `python -m overpressure support-bundle FILE`). It holds the installer's logs, and the headset's own when its
+        system runs; serial numbers are masked. Read it before attaching it.
+    validations:
+      required: true

@@ -1,0 +1,5 @@
+# Text files keep LF line endings, also on Windows checkouts; a Windows script keeps CRLF.
+* text=auto eol=lf
+*.cmd text eol=crlf
+# A release zip (git archive) fills in the commit and its time: the zip has no Git.
+headset.json export-subst

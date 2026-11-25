@@ -1,0 +1,174 @@
+# Every pull request, every push to main, and every release before it is made (release.yml): the headset's
+# tooling dropped into overpressure's main (devices/myheadset), as an owner's computer has it. Nothing here
+# needs vendor files or a headset. One run per content: a tree that passed once against overpressure's main of
+# the time (a pull request's) is not tested again when it lands on main or is tagged; its checks are skipped.
+# The job ci is the one required check: it passes only when every check passed or was skipped for that reason.
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  # Whether this tree passed against overpressure's main as it is now, in an earlier run of this repository
+  # (never a fork's): the artifact its last job leaves. The checks below test that commit of overpressure's.
+  tree:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+    outputs:
+      passed: ${{ steps.earlier.outputs.id != '' }}
+      marker: ${{ steps.tree.outputs.marker }}
+      overpressure: ${{ steps.tree.outputs.overpressure }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: The tree, and overpressure's main it is tested against
+        id: tree
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          main=$(gh api repos/overpressure/overpressure/commits/main --jq '.sha + " " + .commit.tree.sha')
+          commit=${main% *} main_tree=${main#* }
+          [ -n "$commit" ] && [ -n "$main_tree" ] && [ "$commit" != "$main_tree" ]
+          echo "overpressure=$commit" >> "$GITHUB_OUTPUT"
+          echo "marker=ci-passed-$(git rev-parse 'HEAD^{tree}')-$main_tree" >> "$GITHUB_OUTPUT"
+      - name: An earlier pass
+        id: earlier
+        env:
+          GH_TOKEN: ${{ github.token }}
+          MARKER: ${{ steps.tree.outputs.marker }}
+          OURS: "[.artifacts[] | select((.expired | not) and .workflow_run.head_repository_id == ${{ github.repository_id }})][0].id // empty"
+        run: |
+          id=$(gh api "repos/$GITHUB_REPOSITORY/actions/artifacts?name=$MARKER&per_page=30" --jq "$OURS")
+          echo "id=$id" >> "$GITHUB_OUTPUT"
+          [ -z "$id" ] || echo "$MARKER passed before (artifact $id): the checks are skipped"
+
+  # The host tests, on each system the installer runs on.
+  tests:
+    needs: tree
+    if: needs.tree.outputs.passed != 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: overpressure/overpressure
+          ref: ${{ needs.tree.outputs.overpressure }}
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: devices/myheadset
+      - uses: astral-sh/setup-uv@18d369b23da25a81e9458561248e1aafff6a70fa # v10.3.1
+        with:
+          version: "0.9.26"
+          python-version: "3.12"
+      - run: uv sync --locked
+      # As overpressure's own CI loads each headset (its headsets job): a refused one would never show.
+      - name: It loads
+        shell: bash
+        run: |
+          found=$(uv run python -m overpressure devices)
+          echo "$found"
+          ! grep -q refused <<< "$found"
+      - run: uv run python -m unittest discover -t . -s devices/myheadset/tests
+        env:
+          PYTHONIOENCODING: utf-8
+
+  lint:
+    needs: tree
+    if: needs.tree.outputs.passed != 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: overpressure/overpressure
+          ref: ${{ needs.tree.outputs.overpressure }}
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: devices/myheadset
+      - uses: astral-sh/setup-uv@18d369b23da25a81e9458561248e1aafff6a70fa # v10.3.1
+        with:
+          version: "0.9.26"
+      - run: uv sync --locked
+      - name: Formatting
+        run: uv run ruff format --check devices/myheadset
+      - name: Lint
+        run: uv run ruff check devices/myheadset
+      - name: Types
+        run: uv run ty check devices/myheadset
+
+  repository:
+    needs: tree
+    if: needs.tree.outputs.passed != 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: overpressure/overpressure
+          ref: ${{ needs.tree.outputs.overpressure }}
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: devices/myheadset
+          fetch-depth: 0
+      - name: Links in the documents
+        run: python3 scripts/check-docs.py --repo devices/myheadset
+      - name: Shellcheck
+        run: python3 scripts/run-shellcheck.py --repo devices/myheadset
+      - name: Private data, in every commit
+        run: python3 scripts/check-private.py --repo devices/myheadset --history
+      - name: The workflows (actionlint, pinned by its release's SHA-256)
+        env:
+          VERSION: 1.7.12
+          SHA256: 8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8
+        run: |
+          archive="$RUNNER_TEMP/actionlint.tar.gz"
+          release="https://github.com/rhysd/actionlint/releases/download/v$VERSION"
+          curl -fsSL -o "$archive" "$release/actionlint_${VERSION}_linux_amd64.tar.gz"
+          echo "$SHA256  $archive" | sha256sum -c -
+          tar -xzf "$archive" -C "$RUNNER_TEMP" actionlint
+          cd devices/myheadset && "$RUNNER_TEMP/actionlint" -color
+
+  # The marker that this tree passed, for the runs after this one.
+  passed:
+    needs: [tree, tests, lint, repository]
+    if: ${{ !cancelled() && !failure() && needs.tree.outputs.passed != 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "${{ github.sha }}" > passed.txt
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: ${{ needs.tree.outputs.marker }}
+          path: passed.txt
+          retention-days: 90
+
+  # The one required check. A failed or cancelled tree job fails it; any other check counts only when it passed,
+  # or was skipped because this tree passed before (the per-tree reuse above).
+  ci:
+    needs: [tree, tests, lint, repository, passed]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Every check passed or was reused
+        env:
+          NEEDS: ${{ toJSON(needs) }}
+          REUSED: ${{ needs.tree.outputs.passed }}
+        run: |
+          python3 - <<'EOF'
+          import json, os, sys
+          needs = json.loads(os.environ["NEEDS"])
+          reused = os.environ["REUSED"] == "true"
+          bad = []
+          for job, state in needs.items():
+              result = state["result"]
+              fine = result == "success" or (job != "tree" and result == "skipped" and reused)
+              print(f"{job}: {result}" + ("" if fine else "  <- fails the gate"))
+              bad += [] if fine else [job]
+          sys.exit(1 if bad else 0)
+          EOF

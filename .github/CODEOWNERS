@@ -1,0 +1,4 @@
+# Who has to approve a change (GOVERNANCE.md in overpressure/.github). The headset's own files have no owner: its
+# maintainers merge them alone. CI and the interface a release declares are shared with the organization.
+/.github/      @overpressure/core
+/headset.json  @overpressure/core
