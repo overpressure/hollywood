@@ -35,8 +35,10 @@ overpressure that runs it installs the release, also later ones, and the release
 4. **CI** ([release.yml](../.github/workflows/release.yml)) runs every check of CI on the tagged commit, refuses
    a tag that is not annotated, not on `main`, not a calendar release or another version than `headset.json`'s,
    writes the notes and `CHANGELOG.md` with overpressure's `scripts/release.py notes` (git-cliff,
-   [cliff.toml](../cliff.toml)), naming the oldest overpressure release that runs `api`, makes the source zip with
-   `git archive` and creates the GitHub release, a pre-release for a beta.
+   [cliff.toml](../cliff.toml)), naming the oldest overpressure release that runs `api` and the contributors (each change's pull request
+   and its author), makes the source zip with `git archive` and creates the GitHub release, a pre-release for a
+   beta. Then it closes the issues the release brings: every open issue whose Stage is Awaiting release gets the
+   release's link.
 5. **The next version.** `python .overpressure/scripts/release.py bump next --version-file headset.json` writes
    the next development version, by pull request.
 6. **The catalogue.** For its first release, the headset gets its entry in overpressure's
