@@ -1,7 +1,7 @@
 # Releasing
 
 **TL;DR.** A pushed, annotated tag that is `headset.json`'s calendar version (`2026.12.0`, a beta `2026.12.0b0`)
-makes the release overpressure downloads (`python -m overpressure headset add myheadset`, the window's
+makes the release overpressure downloads (`python -m overpressure headset add hollywood`, the window's
 *Download*): the source zip and its SHA-256, nothing uploaded by hand. Only the headset's team creates its tags
 ([GOVERNANCE.md](https://github.com/overpressure/.github/blob/main/GOVERNANCE.md)).
 
@@ -12,7 +12,7 @@ Calendar versions, as overpressure's
 a release is `YYYY.M.PATCH` (the month without a leading zero, that month's releases counted from 0), a beta the
 coming release with `bN` from `b0`, and `main` between releases the next one as a development version
 (`2026.12.0.dev0`); a download of `main` is shown with its commit's time. The tag is the version itself, the same as
-`version` in [headset.json](../headset.json). A beta is a pre-release: `headset add myheadset` takes it while there is
+`version` in [headset.json](../headset.json). A beta is a pre-release: `headset add hollywood` takes it while there is
 no stable release. `api` in `headset.json` names the overpressure headset interface the release needs: every
 overpressure that runs it installs the release, also later ones, and the release's notes name the oldest one.
 
