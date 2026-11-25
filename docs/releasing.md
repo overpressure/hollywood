@@ -32,7 +32,9 @@ overpressure that runs it installs the release, also later ones, and the release
    git push origin 2026.12.0b0
    ```
 
-4. **CI** ([release.yml](../.github/workflows/release.yml)) runs every check of CI on the tagged commit, refuses
+4. **CI** ([release.yml](../.github/workflows/release.yml), through overpressure's
+   [headset-release.yml](https://github.com/overpressure/overpressure/blob/main/.github/workflows/headset-release.yml))
+   runs every check of CI on the tagged commit, refuses
    a tag that is not annotated, not on `main`, not a calendar release or another version than `headset.json`'s,
    writes the notes and `CHANGELOG.md` with overpressure's `scripts/release.py notes` (git-cliff,
    [cliff.toml](../cliff.toml)), naming the oldest overpressure release that runs `api` and the contributors (each change's pull request
