@@ -1,2 +1,2 @@
 # SPDX-License-Identifier: Unlicense
-"""My Headset (codename myheadset)."""
+"""Meta Quest 2 (codename hollywood)."""

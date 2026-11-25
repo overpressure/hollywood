@@ -1,6 +1,6 @@
 # Documents
 
-How My Headset's system works, how it is built and how it is tested. What works and how to install it: the
+How Meta Quest 2's system works, how it is built and how it is tested. What works and how to install it: the
 [README](../README.md).
 
 | Document | Contents |
